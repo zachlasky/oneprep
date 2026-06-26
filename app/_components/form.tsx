@@ -1,26 +1,20 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-import { MAX_EMAIL_LENGTH, validateEmail } from '../_lib/email';
-
-type Role = 'skip-level-manager' | 'manager' | 'peer' | 'direct-report';
-
-const ROLES: { value: Role; label: string }[] = [
-  { value: 'skip-level-manager', label: 'Skip-Level Manager' },
-  { value: 'manager', label: 'Manager' },
-  { value: 'peer', label: 'Peer' },
-  { value: 'direct-report', label: 'Direct Report' }
-];
+import { MAX_EMAIL_LENGTH, validateEmail } from '@/app/_lib/email';
+import { ROLES, type Role } from '@/app/_lib/roles';
 
 const Form = () => {
+  const router = useRouter();
   const [role, setRole] = useState<Role>('manager');
   const [email, setEmail] = useState('');
 
   const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log('Role:', role);
-    console.log('Meeting with:', email);
+    const params = new URLSearchParams({ person: email, role });
+    router.push(`/prep?${params.toString()}`);
   };
 
   const isSubmitDisabled = !role || !email || !validateEmail(email);
