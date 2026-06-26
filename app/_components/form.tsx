@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 
+import { MAX_EMAIL_LENGTH, validateEmail } from '../_lib/email';
+
 type Role = 'skip-level-manager' | 'manager' | 'peer' | 'direct-report';
 
 const ROLES: { value: Role; label: string }[] = [
@@ -10,13 +12,6 @@ const ROLES: { value: Role; label: string }[] = [
   { value: 'peer', label: 'Peer' },
   { value: 'direct-report', label: 'Direct Report' }
 ];
-
-const MAX_EMAIL_LENGTH = 254;
-
-const validateEmail = (email: string) => {
-  const re = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-  return re.test(email);
-};
 
 const Form = () => {
   const [role, setRole] = useState<Role>('manager');
