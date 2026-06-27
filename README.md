@@ -10,6 +10,27 @@ The briefing itself is short and structured. It reads the gathered activity and 
 
 The goal is simple. Walk into every 1:1 already knowing the shape of the conversation, so the time you spend together goes to the things that matter.
 
+## Screenshots
+
+The three-step form:
+
+<table>
+  <tr>
+    <td><img src="assets/form-step-1.png" alt="Step 1: choose your role" width="240" /></td>
+    <td><img src="assets/form-step-2.png" alt="Step 2: enter the teammate's GitHub username" width="240" /></td>
+    <td><img src="assets/form-step-3.png" alt="Step 3: optionally add the teammate's Jira email" width="240" /></td>
+  </tr>
+  <tr>
+    <td align="center">1. Pick your role</td>
+    <td align="center">2. GitHub username</td>
+    <td align="center">3. Jira email (optional)</td>
+  </tr>
+</table>
+
+A generated briefing:
+
+![A generated 1:1 briefing with strengths, concerns, and questions](assets/briefing.png)
+
 ## Prerequisites
 
 - Node.js 20.9 or newer
