@@ -18,8 +18,6 @@ export type BriefingInput = {
 const MAX_TOKENS = 4096;
 const MODEL = 'claude-haiku-4-5';
 const REVALIDATE_INTERVAL = 60 * 60 * 24; // 1 day
-const BRIEFING_UNAVAILABLE =
-  'Your 1:1 briefing could not be generated at this time. Please try again later.';
 const SYSTEM_PROMPT = `
   You help an engineer prepare for a 1:1 with a teammate, using the recent work activity provided in the user's message.
   Output plain text only — no Markdown. Do not use #, *, **, or backticks.
@@ -108,11 +106,13 @@ const cachedBriefing = unstable_cache(
   { revalidate: REVALIDATE_INTERVAL }
 );
 
-export async function generateBriefing(input: BriefingInput): Promise<string> {
+// Returns null on failure (no activity, API error). Callers render the
+// user-facing fallback; failures are never cached (cachedBriefing throws).
+export async function generateBriefing(input: BriefingInput): Promise<string | null> {
   try {
     return await cachedBriefing(input);
   } catch (err) {
     console.error('Briefing generation failed:', err);
-    return BRIEFING_UNAVAILABLE;
+    return null;
   }
 }
