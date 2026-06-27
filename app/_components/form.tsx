@@ -22,15 +22,15 @@ const Form = () => {
   const router = useRouter();
   const [step, setStep] = useState<Step>(1);
   const [role, setRole] = useState<Role | null>(null);
-  const [github, setGithub] = useState('');
-  const [confluence, setConfluence] = useState('');
+  const [githubUsername, setGithubUsername] = useState('');
+  const [jiraEmail, setJiraEmail] = useState('');
 
   const selectRole = (value: Role) => {
     setRole(value);
     setStep(2);
   };
 
-  const canProceed = step === 2 ? github.trim() !== '' : confluence.trim() !== '';
+  const canProceed = step === 2 ? githubUsername.trim() !== '' : true;
 
   const goBack = () => setStep((s) => (s > 1 ? ((s - 1) as Step) : s));
 
@@ -40,8 +40,8 @@ const Form = () => {
     else if (role) {
       const params = new URLSearchParams({
         role,
-        github: github.trim(),
-        confluence: confluence.trim()
+        githubUsername: githubUsername.trim(),
+        jiraEmail: jiraEmail.trim()
       });
       router.push(`/prep?${params.toString()}`);
     }
@@ -87,8 +87,8 @@ const Form = () => {
           </span>
           <input
             type="text"
-            value={github}
-            onChange={(e) => setGithub(e.target.value)}
+            value={githubUsername}
+            onChange={(e) => setGithubUsername(e.target.value)}
             placeholder="octocat"
             maxLength={GITHUB_MAX_LENGTH}
             className={inputClass}
@@ -99,13 +99,13 @@ const Form = () => {
       {step === 3 && (
         <label className="flex flex-col gap-2">
           <span className="text-sm font-medium text-zinc-900">
-            My teammate&apos;s Confluence Id is
+            (Optional) My teammate&apos;s Jira email is
           </span>
           <input
             type="text"
-            value={confluence}
-            onChange={(e) => setConfluence(e.target.value)}
-            placeholder="557058:..."
+            value={jiraEmail}
+            onChange={(e) => setJiraEmail(e.target.value)}
+            placeholder="jane@company.com"
             className={inputClass}
           />
         </label>

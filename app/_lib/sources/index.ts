@@ -1,8 +1,16 @@
 import { fetchGithubPullRequests } from './github';
+import { fetchJiraIssues } from './jira';
 import { type BriefingContext } from './types';
 
-// Just GitHub for now — Jira joins next.
-export async function gatherContext(githubUsername: string): Promise<BriefingContext> {
-  const github = await fetchGithubPullRequests(githubUsername);
-  return { github };
+// Runs both sources in PARALLEL — total latency ≈ the slowest, not the sum.
+// A source with missing creds/identity contributes [] rather than failing the briefing.
+export async function gatherContext(
+  githubUsername: string,
+  jiraEmail: string
+): Promise<BriefingContext> {
+  const [github, jira] = await Promise.all([
+    fetchGithubPullRequests(githubUsername),
+    jiraEmail ? fetchJiraIssues(jiraEmail) : Promise.resolve([])
+  ]);
+  return { github, jira };
 }

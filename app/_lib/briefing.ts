@@ -7,8 +7,9 @@ import { type BriefingContext } from '@/app/_lib/sources/types';
 import { type Role } from './roles';
 
 export type BriefingInput = {
-  github: string;
+  githubUsername: string;
   role: Role;
+  jiraEmail: string;
 };
 
 // A ceiling, not a target — billed on tokens actually generated, so this only
@@ -22,7 +23,7 @@ const BRIEFING_UNAVAILABLE =
 const SYSTEM_PROMPT = `
   You help an engineer prepare for a 1:1 with a teammate, using the recent work activity provided in the user's message.
   Output plain text only — no Markdown. Do not use #, *, **, or backticks.
-  Write exactly three sections, in this order. Put each section's label on its own line, then exactly two points, each on its own line beginning with a bullet "• ", with a blank line between sections:
+  Write exactly three sections, in this order. Put each section's label on its own line, then exactly three points, each on its own line beginning with a bullet "• ", with a blank line between sections:
 
   Strengths — things going well that are worth recognizing.
   Concerns — risks, blockers, or things to keep an eye on.
@@ -41,38 +42,48 @@ function getClient(): Anthropic {
   return client;
 }
 
-function buildPrompt({ role, context }: BriefingInput & { context: BriefingContext }): string {
+function buildPrompt({ role, context }: { role: Role; context: BriefingContext }): string {
+  console.log('context jira', context.jira);
   const today = new Date().toISOString().slice(0, 10);
 
-  const github = context.github.length
-    ? context.github
-        .map(
-          (pr) => `- [${pr.state}] ${pr.repo}: ${pr.title} (updated ${pr.updatedAt.slice(0, 10)})`
-        )
-        .join('\n')
-    : 'No recent GitHub activity found.';
+  const github = context.github
+    .map((pr) => `- [${pr.state}] ${pr.repo}: ${pr.title} (updated ${pr.updatedAt.slice(0, 10)})`)
+    .join('\n');
 
-  return [
+  const sections = [
     `Today is ${today}.`,
     `Prepare me for a 1:1. I am their ${role}.`,
     `Their recent GitHub pull requests:\n${github}`
-  ].join('\n');
+  ];
+
+  // Jira is optional — only include the section when there's something to show,
+  // so the model never sees a dangling header it might comment on or fabricate around.
+  if (context.jira.length) {
+    const jira = context.jira
+      .map((issue) => `- [${issue.status}] ${issue.key}: ${issue.summary}`)
+      .join('\n');
+    sections.push(`Their current Jira sprint issues:\n${jira}`);
+  }
+
+  return sections.join('\n');
 }
 
 /**
  * Generates a 1:1 briefing. Runs ONLY on the server — this is where the
  * Anthropic API key lives. Never import this from a 'use client' component.
- *
- * Phase 2+ will gather GitHub/Jira context for `person` and weave
- * it into buildPrompt before this call.
  */
 // Cached per-params for a day. THROWS on any failure (no activity, API error)
 // so unstable_cache never caches a failure — only successful briefings are
 // stored, and a failed attempt re-runs on the next request.
 const cachedBriefing = unstable_cache(
-  async ({ github, role }: BriefingInput): Promise<string> => {
-    const context = await gatherContext(github);
-    if (!context.github.length) throw new Error('No GitHub activity to brief on.');
+  async ({ githubUsername, role, jiraEmail }: BriefingInput): Promise<string> => {
+    const context = await gatherContext(githubUsername, jiraEmail);
+    // GitHub is the required source; Jira is optional, additive context. Its
+    // absence or failure (no ID, no creds, no sprint, API error) never fails the
+    // briefing — fetchJiraIssues returns [] rather than throwing.
+    if (!context.github.length) {
+      throw new Error('No GitHub activity to brief on.');
+    }
 
     const message = await getClient().messages.create({
       model: MODEL,
@@ -81,7 +92,7 @@ const cachedBriefing = unstable_cache(
       // Re-enable (adaptive, on an Opus/Sonnet tier) if briefing quality needs deeper reasoning.
       thinking: { type: 'disabled' },
       system: SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: buildPrompt({ github, role, context }) }]
+      messages: [{ role: 'user', content: buildPrompt({ role, context }) }]
     });
 
     const text = message.content.find(

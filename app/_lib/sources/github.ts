@@ -7,11 +7,13 @@ const ISSUE_CAP = 20;
 // across ALL public repos. That's both the real design (a person's work spans
 // repos) and what gives realistic history when testing against an active
 // public contributor instead of one sparse repo.
-export async function fetchGithubPullRequests(username: string): Promise<GithubPullRequest[]> {
+export async function fetchGithubPullRequests(
+  githubUsername: string
+): Promise<GithubPullRequest[]> {
   // Token is optional for public data — raises the rate limit when present.
   // Will give access to private repos if the token has those scopes.
   const token = process.env.GITHUB_TOKEN;
-  const query = `author:${username} type:pr`;
+  const query = `author:${githubUsername} type:pr`;
   const url = `${GITHUB_API}/search/issues?q=${encodeURIComponent(query)}&sort=updated&order=desc&per_page=${ISSUE_CAP}`;
 
   try {

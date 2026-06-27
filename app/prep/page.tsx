@@ -11,11 +11,11 @@ const isRole = (value: string | undefined): value is Role =>
 export default async function PrepPage({
   searchParams
 }: {
-  searchParams: Promise<{ role?: string; github?: string; confluence?: string }>;
+  searchParams: Promise<{ role?: string; githubUsername?: string; jiraEmail?: string }>;
 }) {
-  const { role, github } = await searchParams;
+  const { role, githubUsername, jiraEmail } = await searchParams;
 
-  if (!github || !isRole(role)) {
+  if (!githubUsername || !isRole(role)) {
     return (
       <main className="flex-1 p-20">
         <div className="mx-auto max-w-2xl">
@@ -33,7 +33,7 @@ export default async function PrepPage({
       <div className="mx-auto max-w-2xl">
         <h1 className="text-2xl font-semibold tracking-tight">Your 1:1 briefing</h1>
         <Suspense fallback={<BriefingSkeleton />}>
-          <Briefing github={github} role={role} />
+          <Briefing githubUsername={githubUsername} role={role} jiraEmail={jiraEmail ?? ''} />
         </Suspense>
       </div>
     </main>
