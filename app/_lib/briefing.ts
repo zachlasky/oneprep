@@ -20,6 +20,7 @@ const MODEL = 'claude-haiku-4-5';
 const REVALIDATE_INTERVAL = 60 * 60 * 24; // 1 day
 const SYSTEM_PROMPT = `
   You help an engineer prepare for a 1:1 with a teammate, using the recent work activity provided in the user's message.
+  The reader is the engineer preparing for the meeting, not the teammate. Always write about the teammate in the third person (use "they"). Never address the teammate as "you", and do not guess or invent the teammate's name.
   Output plain text only — no Markdown. Do not use #, *, **, or backticks.
   Write exactly three sections, in this order. Put each section's label on its own line, then exactly three points, each on its own line beginning with a bullet "• ", with a blank line between sections:
 
