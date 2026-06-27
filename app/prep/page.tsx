@@ -1,12 +1,9 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
 
-import { ROLES, type Role } from '@/app/_lib/roles';
+import { isRole } from '@/app/_lib/roles';
 import { Briefing } from '@/app/_components/briefing';
 import { BriefingSkeleton } from '@/app/_components/briefing-skeleton';
-
-const isRole = (value: string | undefined): value is Role =>
-  ROLES.some((r) => r.value === value);
 
 export default async function PrepPage({
   searchParams

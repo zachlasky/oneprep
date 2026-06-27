@@ -8,10 +8,14 @@ const MAX_ISSUE_RESULTS = 20;
 
 type JiraConfig = { site: string; auth: string };
 
+// Tolerate JIRA_SITE with or without a protocol / trailing slash — jiraGet
+// prepends "https://", so a prefix here would double it → ENOTFOUND 'https'.
+export function normalizeSite(raw: string | undefined): string | undefined {
+  return raw?.replace(/^https?:\/\//, '').replace(/\/+$/, '');
+}
+
 function jiraConfig(): JiraConfig | null {
-  // Tolerate JIRA_SITE with or without a protocol / trailing slash — jiraGet
-  // prepends "https://", so a prefix here would double it → ENOTFOUND 'https'.
-  const site = process.env.JIRA_SITE?.replace(/^https?:\/\//, '').replace(/\/+$/, '');
+  const site = normalizeSite(process.env.JIRA_SITE);
   const email = process.env.JIRA_EMAIL;
   const token = process.env.JIRA_API_TOKEN;
   if (!site || !email || !token) return null;

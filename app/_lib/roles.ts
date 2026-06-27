@@ -12,3 +12,6 @@ export const ROLES: { value: Role; label: string }[] = [
   { value: 'direct-report', label: 'Direct Report' },
   { value: 'skip-level-report', label: 'Skip-Level Report' }
 ];
+
+export const isRole = (value: string | undefined): value is Role =>
+  ROLES.some((r) => r.value === value);
