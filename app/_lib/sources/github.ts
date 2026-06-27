@@ -3,17 +3,13 @@ import { type GithubPullRequest } from './types';
 const GITHUB_API = 'https://api.github.com';
 const ISSUE_CAP = 20;
 
-// Person-centric, not repo-centric: GitHub's search API returns a user's PRs
-// across ALL public repos. That's both the real design (a person's work spans
-// repos) and what gives realistic history when testing against an active
-// public contributor instead of one sparse repo.
-export async function fetchGithubPullRequests(
-  githubUsername: string
-): Promise<GithubPullRequest[]> {
-  // Token is optional for public data — raises the rate limit when present.
-  // Will give access to private repos if the token has those scopes.
+// Runs a GitHub issue/PR search and maps the results. Person-centric and
+// cross-repo (a person's work spans repos). Returns [] on any failure so a
+// source problem never breaks the briefing.
+async function searchPullRequests(query: string): Promise<GithubPullRequest[]> {
+  // Token is optional for public data — raises the rate limit when present, and
+  // unlocks private repos if it has those scopes.
   const token = process.env.GITHUB_TOKEN;
-  const query = `author:${githubUsername} type:pr`;
   const url = `${GITHUB_API}/search/issues?q=${encodeURIComponent(query)}&sort=updated&order=desc&per_page=${ISSUE_CAP}`;
 
   try {
@@ -26,7 +22,7 @@ export async function fetchGithubPullRequests(
     });
 
     if (!res.ok) {
-      console.error(`GitHub fetch failed (${res.status}): ${await res.text()}`);
+      console.error(`GitHub search failed (${res.status}): ${await res.text()}`);
       return [];
     }
 
@@ -48,9 +44,19 @@ export async function fetchGithubPullRequests(
       updatedAt: item.updated_at
     }));
   } catch (err) {
-    console.error('GitHub fetch errored:', err);
+    console.error('GitHub search errored:', err);
     return [];
   }
+}
+
+// PRs the teammate opened.
+export function fetchGithubPullRequests(githubUsername: string): Promise<GithubPullRequest[]> {
+  return searchPullRequests(`author:${githubUsername} type:pr`);
+}
+
+// PRs the teammate reviewed — invisible collaboration worth surfacing in a 1:1.
+export function fetchGithubReviews(githubUsername: string): Promise<GithubPullRequest[]> {
+  return searchPullRequests(`reviewed-by:${githubUsername} type:pr`);
 }
 
 // Resolve a username to a display name for the UI. Always returns something

@@ -14,6 +14,7 @@ export type JiraIssue = {
 };
 
 export type BriefingContext = {
-  github: GithubPullRequest[];
+  githubPullRequests: GithubPullRequest[];
+  githubReviews: GithubPullRequest[];
   jira: JiraIssue[];
 };

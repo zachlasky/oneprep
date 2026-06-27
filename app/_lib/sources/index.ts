@@ -1,4 +1,4 @@
-import { fetchGithubPullRequests } from './github';
+import { fetchGithubPullRequests, fetchGithubReviews } from './github';
 import { fetchJiraIssues } from './jira';
 import { type BriefingContext } from './types';
 
@@ -11,9 +11,10 @@ export async function gatherContext(
   githubUsername: string,
   jiraEmail: string
 ): Promise<BriefingContext> {
-  const [github, jira] = await Promise.all([
+  const [githubPullRequests, githubReviews, jira] = await Promise.all([
     fetchGithubPullRequests(githubUsername),
+    fetchGithubReviews(githubUsername),
     jiraEmail ? fetchJiraIssues(jiraEmail) : Promise.resolve([])
   ]);
-  return { github, jira };
+  return { githubPullRequests, githubReviews, jira };
 }

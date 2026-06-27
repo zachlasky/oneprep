@@ -45,18 +45,21 @@ function getClient(): Anthropic {
 function buildPrompt({ role, context }: { role: Role; context: BriefingContext }): string {
   const today = new Date().toISOString().slice(0, 10);
 
-  const github = context.github
-    .map((pr) => `- [${pr.state}] ${pr.repo}: ${pr.title} (updated ${pr.updatedAt.slice(0, 10)})`)
-    .join('\n');
+  const formatPrs = (prs: BriefingContext['githubPullRequests']) =>
+    prs
+      .map((pr) => `- [${pr.state}] ${pr.repo}: ${pr.title} (updated ${pr.updatedAt.slice(0, 10)})`)
+      .join('\n');
 
-  const sections = [
-    `Today is ${today}.`,
-    `Prepare me for a 1:1. I am their ${role}.`,
-    `Their recent GitHub pull requests:\n${github}`
-  ];
+  const sections = [`Today is ${today}.`, `Prepare me for a 1:1. I am their ${role}.`];
 
-  // Jira is optional — only include the section when there's something to show,
-  // so the model never sees a dangling header it might comment on or fabricate around.
+  // Each section is included only when it has content, so the model never sees a
+  // dangling header it might comment on or fabricate around.
+  if (context.githubPullRequests.length) {
+    sections.push(`Pull requests they opened:\n${formatPrs(context.githubPullRequests)}`);
+  }
+  if (context.githubReviews.length) {
+    sections.push(`Pull requests they reviewed:\n${formatPrs(context.githubReviews)}`);
+  }
   if (context.jira.length) {
     const jira = context.jira
       .map((issue) => `- [${issue.status}] ${issue.key}: ${issue.summary}`)
@@ -77,10 +80,10 @@ function buildPrompt({ role, context }: { role: Role; context: BriefingContext }
 const cachedBriefing = unstable_cache(
   async ({ githubUsername, role, jiraEmail }: BriefingInput): Promise<string> => {
     const context = await gatherContext(githubUsername, jiraEmail);
-    // GitHub is the required source; Jira is optional, additive context. Its
-    // absence or failure (no ID, no creds, no sprint, API error) never fails the
+    // GitHub is the required source (opened PRs or reviews given); Jira is
+    // optional, additive context whose absence or failure never fails the
     // briefing — fetchJiraIssues returns [] rather than throwing.
-    if (!context.github.length) {
+    if (!context.githubPullRequests.length && !context.githubReviews.length) {
       throw new Error('No GitHub activity to brief on.');
     }
 
