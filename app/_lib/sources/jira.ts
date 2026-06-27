@@ -29,11 +29,13 @@ function jiraGet(config: JiraConfig, path: string): Promise<Response> {
   });
 }
 
-// Resolve a user-typed email into the teammate's Atlassian accountId.
-// We match on emailAddress EXACTLY (case-insensitive), so a
-// typed value can only resolve to the person who owns that email. The query
-// goes into a URL param (encoded) — never into JQL — so it can't inject.
-async function resolveAccountId(config: JiraConfig, email: string): Promise<string | null> {
+type JiraUser = { accountId: string; displayName: string };
+
+// Resolve a user-typed email into the teammate's Atlassian account.
+// We match on emailAddress EXACTLY (case-insensitive), so a typed value can only
+// resolve to the person who owns that email. The query goes into a URL param
+// (encoded) — never into JQL — so it can't inject.
+async function resolveJiraUser(config: JiraConfig, email: string): Promise<JiraUser | null> {
   const target = email.trim().toLowerCase();
   try {
     const res = await jiraGet(
@@ -44,9 +46,14 @@ async function resolveAccountId(config: JiraConfig, email: string): Promise<stri
       console.error(`Jira user search failed (${res.status}): ${await res.text()}`);
       return null;
     }
-    const users = (await res.json()) as { accountId?: string; emailAddress?: string }[];
+    const users = (await res.json()) as {
+      accountId?: string;
+      displayName?: string;
+      emailAddress?: string;
+    }[];
     const match = users.find((u) => u.emailAddress?.toLowerCase() === target);
-    return match?.accountId ?? null;
+    if (!match?.accountId) return null;
+    return { accountId: match.accountId, displayName: match.displayName ?? email };
   } catch (err) {
     console.error('Jira user search errored:', err);
     return null;
@@ -63,10 +70,10 @@ export async function fetchJiraIssues(email: string): Promise<JiraIssue[]> {
   const config = jiraConfig();
   if (!config) return [];
 
-  const accountId = await resolveAccountId(config, email);
-  if (!accountId || !ACCOUNT_ID.test(accountId)) return [];
+  const user = await resolveJiraUser(config, email);
+  if (!user || !ACCOUNT_ID.test(user.accountId)) return [];
 
-  const jql = `assignee = "${accountId}" AND sprint in openSprints() ORDER BY updated DESC`;
+  const jql = `assignee = "${user.accountId}" AND sprint in openSprints() ORDER BY updated DESC`;
 
   try {
     const res = await jiraGet(
@@ -92,4 +99,13 @@ export async function fetchJiraIssues(email: string): Promise<JiraIssue[]> {
     console.error('Jira fetch errored:', err);
     return [];
   }
+}
+
+// Resolve an email to the teammate's Jira display name for the UI. Returns null
+// when Jira isn't configured or the email matches no user.
+export async function fetchJiraDisplayName(email: string): Promise<string | null> {
+  const config = jiraConfig();
+  if (!config) return null;
+  const user = await resolveJiraUser(config, email);
+  return user?.displayName ?? null;
 }

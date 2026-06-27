@@ -52,3 +52,32 @@ export async function fetchGithubPullRequests(
     return [];
   }
 }
+
+// Resolve a username to a display name for the UI. Always returns something
+// printable: the profile name, falling back to the login, then the input — so a
+// failed/empty lookup degrades to showing the username rather than breaking.
+export async function fetchGithubDisplayName(githubUsername: string): Promise<string> {
+  const token = process.env.GITHUB_TOKEN;
+  const url = `${GITHUB_API}/users/${encodeURIComponent(githubUsername)}`;
+
+  try {
+    const res = await fetch(url, {
+      headers: {
+        Accept: 'application/vnd.github+json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      cache: 'no-store'
+    });
+
+    if (!res.ok) {
+      console.error(`GitHub user fetch failed (${res.status}): ${await res.text()}`);
+      return githubUsername;
+    }
+
+    const data = (await res.json()) as { name?: string | null; login?: string };
+    return data.name || data.login || githubUsername;
+  } catch (err) {
+    console.error('GitHub user fetch errored:', err);
+    return githubUsername;
+  }
+}
