@@ -12,10 +12,11 @@ export default function AboutPage() {
           </p>
           <p>
             It works by pulling signal from the tools where work actually happens. From GitHub it
-            reads recent pull requests, so you can see what someone has been building and shipping.
-            From Jira it reads the issues assigned to them in the current sprint, so you can see what
-            is in flight and what might be blocked. Jira is optional, so a briefing still works with
-            GitHub on its own.
+            reads the pull requests they have opened and the pull requests they have reviewed for
+            others, so you can see both what they are shipping and the collaboration that often goes
+            unnoticed. From Jira it reads the issues assigned to them in the current sprint, so you
+            can see what is in flight and what might be blocked. Jira is optional, so a briefing still
+            works with GitHub on its own.
           </p>
           <p>
             The briefing itself is short and structured. It reads the gathered activity and writes a
