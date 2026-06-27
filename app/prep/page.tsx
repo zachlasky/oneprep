@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 
 import { ROLES, type Role } from '@/app/_lib/roles';
 import { Briefing } from '@/app/_components/briefing';
+import { BriefingSkeleton } from '@/app/_components/briefing-skeleton';
 
 const isRole = (value: string | undefined): value is Role =>
   ROLES.some((r) => r.value === value);
@@ -10,11 +11,11 @@ const isRole = (value: string | undefined): value is Role =>
 export default async function PrepPage({
   searchParams
 }: {
-  searchParams: Promise<{ person?: string; role?: string }>;
+  searchParams: Promise<{ role?: string; github?: string; confluence?: string }>;
 }) {
-  const { person, role } = await searchParams;
+  const { role, github } = await searchParams;
 
-  if (!person || !isRole(role)) {
+  if (!github || !isRole(role)) {
     return (
       <main className="flex-1 p-20">
         <div className="mx-auto max-w-2xl">
@@ -31,8 +32,8 @@ export default async function PrepPage({
     <main className="flex-1 p-20">
       <div className="mx-auto max-w-2xl">
         <h1 className="text-2xl font-semibold tracking-tight">Your 1:1 briefing</h1>
-        <Suspense fallback={<p className="mt-8 text-zinc-500">Preparing your briefing…</p>}>
-          <Briefing person={person} role={role} />
+        <Suspense fallback={<BriefingSkeleton />}>
+          <Briefing github={github} role={role} />
         </Suspense>
       </div>
     </main>

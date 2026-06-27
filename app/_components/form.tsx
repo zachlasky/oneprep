@@ -3,60 +3,122 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-import { MAX_EMAIL_LENGTH, validateEmail } from '@/app/_lib/email';
 import { ROLES, type Role } from '@/app/_lib/roles';
+
+type Step = 1 | 2 | 3;
+
+// GitHub usernames are 1–39 chars. Min is enforced by the non-empty `canProceed`
+// gate; this caps the max at the keyboard.
+const GITHUB_MAX_LENGTH = 39;
+
+const inputClass =
+  'rounded-md border border-zinc-300 px-3 py-2 text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500';
+const nextClass =
+  'rounded-md bg-indigo-600 px-4 py-2 font-medium text-white transition-colors cursor-pointer hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-zinc-300';
+const backClass =
+  'rounded-md border border-zinc-300 px-4 py-2 font-medium text-zinc-700 transition-colors cursor-pointer hover:bg-zinc-50';
 
 const Form = () => {
   const router = useRouter();
-  const [role, setRole] = useState<Role>('manager');
-  const [email, setEmail] = useState('');
+  const [step, setStep] = useState<Step>(1);
+  const [role, setRole] = useState<Role | null>(null);
+  const [github, setGithub] = useState('');
+  const [confluence, setConfluence] = useState('');
 
-  const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const params = new URLSearchParams({ person: email, role });
-    router.push(`/prep?${params.toString()}`);
+  const selectRole = (value: Role) => {
+    setRole(value);
+    setStep(2);
   };
 
-  const isSubmitDisabled = !role || !email || !validateEmail(email);
+  const canProceed = step === 2 ? github.trim() !== '' : confluence.trim() !== '';
+
+  const goBack = () => setStep((s) => (s > 1 ? ((s - 1) as Step) : s));
+
+  const goNext = () => {
+    if (!canProceed) return;
+    if (step === 2) setStep(3);
+    else if (role) {
+      const params = new URLSearchParams({
+        role,
+        github: github.trim(),
+        confluence: confluence.trim()
+      });
+      router.push(`/prep?${params.toString()}`);
+    }
+  };
+
+  const onSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    goNext();
+  };
+
+  if (step === 1) {
+    return (
+      <fieldset className="mt-8 flex flex-col gap-4">
+        <legend className="mb-1 text-sm font-medium text-zinc-900">I&apos;m a:</legend>
+        <div className="flex flex-wrap gap-3">
+          {ROLES.map(({ value, label }) => {
+            const selected = role === value;
+            return (
+              <button
+                key={value}
+                type="button"
+                onClick={() => selectRole(value)}
+                className={`cursor-pointer rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
+                  selected
+                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                    : 'border-zinc-300 text-zinc-700 hover:border-indigo-500 hover:bg-indigo-50 hover:text-indigo-700'
+                }`}>
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      </fieldset>
+    );
+  }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-8">
-      <fieldset className="flex flex-col gap-3">
-        <legend className="mb-3 text-sm font-medium text-zinc-900">I&apos;m a:</legend>
+    <form onSubmit={onSubmit} className="mt-8 flex flex-col gap-8">
+      {step === 2 && (
+        <label className="flex flex-col gap-2">
+          <span className="text-sm font-medium text-zinc-900">
+            My teammate&apos;s GitHub username is
+          </span>
+          <input
+            type="text"
+            value={github}
+            onChange={(e) => setGithub(e.target.value)}
+            placeholder="octocat"
+            maxLength={GITHUB_MAX_LENGTH}
+            className={inputClass}
+          />
+        </label>
+      )}
 
-        {ROLES.map(({ value, label }) => (
-          <label key={value} className="flex items-center gap-3 text-zinc-700 cursor-pointer">
-            <input
-              type="radio"
-              name="role"
-              value={value}
-              checked={role === value}
-              onChange={() => setRole(value)}
-              className="h-4 w-4 accent-indigo-600 cursor-pointer"
-            />
-            {label}
-          </label>
-        ))}
-      </fieldset>
+      {step === 3 && (
+        <label className="flex flex-col gap-2">
+          <span className="text-sm font-medium text-zinc-900">
+            My teammate&apos;s Confluence Id is
+          </span>
+          <input
+            type="text"
+            value={confluence}
+            onChange={(e) => setConfluence(e.target.value)}
+            placeholder="557058:..."
+            className={inputClass}
+          />
+        </label>
+      )}
 
-      <label className="flex flex-col gap-2">
-        <span className="text-sm font-medium text-zinc-900">Meeting with:</span>
-        <input
-          type="text"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="Search by email"
-          maxLength={MAX_EMAIL_LENGTH}
-          className="rounded-md border border-zinc-300 px-3 py-2 text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-        />
-      </label>
-
-      <button
-        type="submit"
-        disabled={isSubmitDisabled}
-        className="rounded-md bg-indigo-600 px-4 py-2 font-medium text-white transition-colors cursor-pointer hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-zinc-300">
-        Prepare
-      </button>
+      <div className="flex gap-3">
+        <button type="button" onClick={goBack} className={`flex-1 ${backClass}`}>
+          Back
+        </button>
+        <button type="submit" disabled={!canProceed} className={`flex-1 ${nextClass}`}>
+          {step === 3 ? 'Prepare' : 'Next'}
+        </button>
+      </div>
     </form>
   );
 };
