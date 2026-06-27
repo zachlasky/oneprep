@@ -8,6 +8,8 @@ const ISSUE_CAP = 20;
 // repos) and what gives realistic history when testing against an active
 // public contributor instead of one sparse repo.
 export async function fetchGithubPullRequests(username: string): Promise<GithubPullRequest[]> {
+  // Token is optional for public data — raises the rate limit when present.
+  // Will give access to private repos if the token has those scopes.
   const token = process.env.GITHUB_TOKEN;
   const query = `author:${username} type:pr`;
   const url = `${GITHUB_API}/search/issues?q=${encodeURIComponent(query)}&sort=updated&order=desc&per_page=${ISSUE_CAP}`;
@@ -16,7 +18,6 @@ export async function fetchGithubPullRequests(username: string): Promise<GithubP
     const res = await fetch(url, {
       headers: {
         Accept: 'application/vnd.github+json',
-        // Optional for public data — raises the rate limit when present.
         ...(token ? { Authorization: `Bearer ${token}` } : {})
       },
       cache: 'no-store'
