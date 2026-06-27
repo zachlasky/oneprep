@@ -43,7 +43,6 @@ function getClient(): Anthropic {
 }
 
 function buildPrompt({ role, context }: { role: Role; context: BriefingContext }): string {
-  console.log('context jira', context.jira);
   const today = new Date().toISOString().slice(0, 10);
 
   const github = context.github
