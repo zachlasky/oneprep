@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.png" alt="OnePrep logo" width="84" height="84" />
+</p>
+
 # OnePrep
 
 ## AI-powered 1:1 meeting preparation for engineering teams.
